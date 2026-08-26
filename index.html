@@ -1176,6 +1176,7 @@ en:{
   usersDeleteConfirm:"Delete this user account?",
   usersDeleteErrorSelf:"You can't delete the account you're signed in with.",
   usersDeleteErrorLastAdmin:"At least one admin account must remain.",
+  usersDeleteErrorProtected:"This is a protected system account and can't be deleted.",
   usersDeleted:"User deleted.",
   dashTitle:"Dashboard", dashSub:"Overview of building 326 maintenance tickets",
   byTradeTitle:"Tickets by trade",
@@ -1270,6 +1271,7 @@ ar:{
   usersDeleteConfirm:"هل تريد حذف حساب هذا المستخدم؟",
   usersDeleteErrorSelf:"لا يمكنك حذف الحساب الذي سجّلتِ الدخول به.",
   usersDeleteErrorLastAdmin:"يجب أن يبقى حساب مسؤول واحد على الأقل.",
+  usersDeleteErrorProtected:"هذا حساب نظام محمي ولا يمكن حذفه.",
   usersDeleted:"تم حذف المستخدم.",
   dashTitle:"لوحة المعلومات", dashSub:"نظرة عامة على بلاغات صيانة المبنى 326",
   byTradeTitle:"البلاغات حسب التخصص",
@@ -1358,6 +1360,10 @@ let tradeFilter = "ALL";
 let currentUser = "";
 const TRADES = ["PLUMB","ELECT","CIVIL","LIFT","FIRE","HVAC","BMS"];
 const ACCOUNTS = [ { username: "ghithara", password: "326", question: "What is the building number?", answer: "326", role: "admin" } ];
+const PROTECTED_ACCOUNT = "ghithara";
+function isProtectedAccount(username){
+  return String(username || "").trim().toLowerCase() === PROTECTED_ACCOUNT;
+}
 const ASSETS = [
   {id:"AS1", name:"AHU (x33)", trade:"HVAC", building:"321", location:"", status:"ACTIVE"},
   {id:"AS2", name:"ELEVATOR (x25)", trade:"LIFT", building:"321", location:"", status:"ACTIVE"},
@@ -1569,12 +1575,12 @@ const REQUESTS = []; /* public work-order requests, awaiting admin approval */
    All app data lives in one document: doc(db,"amos326","state").
    ============================================================ */
 const firebaseConfig = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "amos-326.firebaseapp.com",
-  projectId: "amos-326",
-  storageBucket: "amos-326.appspot.com",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyDCPwWDaDbJnTG19DlMCBFy-iApyeX8D3Q",
+  authDomain: "amos-jo.firebaseapp.com",
+  projectId: "amos-jo",
+  storageBucket: "amos-jo.firebasestorage.app",
+  messagingSenderId: "689180457564",
+  appId: "1:689180457564:web:d319b000a9d15b01648499"
 };
 let db = null;
 let syncReady = false;
@@ -1765,7 +1771,7 @@ function updateAdminUI(){
 function buildUsersTable(){
   const tbody = document.getElementById("usersTbody");
   if(!tbody) return;
-  tbody.innerHTML = ACCOUNTS.map(a => {
+  tbody.innerHTML = ACCOUNTS.filter(a => !isProtectedAccount(a.username)).map(a => {
     const roleLbl = a.role === "admin" ? t("usersRoleAdmin") : t("usersRoleUser");
     return `<tr>
       <td class="loc">${a.username}</td>
@@ -1798,6 +1804,11 @@ function addUserAdmin(){
   pushState();
 }
 function deleteUserAdmin(username){
+  if(isProtectedAccount(username)){
+    document.getElementById("usersAddMsg").textContent = t("usersDeleteErrorProtected");
+    document.getElementById("usersAddMsg").className = "form-msg error";
+    return;
+  }
   if(username === currentUser){
     document.getElementById("usersAddMsg").textContent = t("usersDeleteErrorSelf");
     document.getElementById("usersAddMsg").className = "form-msg error";
