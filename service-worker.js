@@ -7,7 +7,7 @@
    Bump CACHE_NAME (e.g. amos-app-shell-v2) any time you upload a new
    version of the main HTML file, so returning users get the fresh copy
    instead of a stale cached one. */
-const CACHE_NAME = "amos-app-shell-v1";
+const CACHE_NAME = "amos-app-shell-v9";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

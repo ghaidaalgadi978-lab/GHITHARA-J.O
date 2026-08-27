@@ -228,8 +228,12 @@
   .chip-group{ display:flex; gap:7px; flex-wrap:wrap; }
   .count-note{ font-size:11.5px; color:var(--muted); margin-bottom:8px; }
 
-  .table-card{ background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
-  table{ width:100%; border-collapse:collapse; font-size:12.8px; }
+  .table-card{ background:var(--card); border:1px solid var(--line); border-radius:12px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; }
+  .table-card::-webkit-scrollbar{ height:10px; }
+  .table-card::-webkit-scrollbar-track{ background:#eef0ea; }
+  .table-card::-webkit-scrollbar-thumb{ background:var(--ink-2); border-radius:6px; }
+  .table-card::-webkit-scrollbar-thumb:hover{ background:var(--ink); }
+  table{ width:100%; min-width:960px; border-collapse:collapse; font-size:12.8px; }
   thead th{
     text-align:left; padding:10px 12px; background:#f4f5f1; color:var(--muted);
     font-weight:600; font-size:10.8px; letter-spacing:.05em; text-transform:uppercase;
@@ -262,6 +266,8 @@
   .btn{ border:none; border-radius:8px; padding:10px 18px; font-weight:700; font-size:13px; cursor:pointer; }
   .btn-primary{ background:var(--ink); color:#f4f2ea; }
   .btn-secondary{ background:#eef0ea; color:var(--text); border:1px solid var(--line); }
+  .btn-danger{ background:#fdecea; color:var(--spr); border:1px solid var(--spr); }
+  .btn-danger:hover{ background:var(--spr); color:#fff; }
   .btn:hover{ opacity:.88; }
   .form-msg{ font-size:12.5px; margin-top:12px; font-weight:600; }
   .form-msg.success{ color:var(--ok); }
@@ -458,22 +464,22 @@
       <div class="nav-item" data-view="data" onclick="showView('data')">
         <span class="ic">⇅</span><span data-i18n="navData">Files &amp; Data</span>
       </div>
-      <div class="nav-item" data-view="assets" onclick="showView('assets')">
+      <div class="nav-item" data-view="assets" onclick="showView('assets')" id="navAssets">
         <span class="ic">🏗</span><span data-i18n="navAssets">Assets</span>
       </div>
-      <div class="nav-item" data-view="pm" onclick="showView('pm')">
+      <div class="nav-item" data-view="pm" onclick="showView('pm')" id="navPM">
         <span class="ic">🛠</span><span data-i18n="navPM">Preventive Maint.</span>
       </div>
-      <div class="nav-item" data-view="inventory" onclick="showView('inventory')">
+      <div class="nav-item" data-view="inventory" onclick="showView('inventory')" id="navInventory">
         <span class="ic">📦</span><span data-i18n="navInventory">Inventory</span>
       </div>
-      <div class="nav-item" data-view="vendors" onclick="showView('vendors')">
+      <div class="nav-item" data-view="vendors" onclick="showView('vendors')" id="navVendors">
         <span class="ic">🧾</span><span data-i18n="navVendors">Vendors &amp; POs</span>
       </div>
-      <div class="nav-item" data-view="reports" onclick="showView('reports')">
+      <div class="nav-item" data-view="reports" onclick="showView('reports')" id="navReports">
         <span class="ic">📄</span><span data-i18n="navReports">Reports</span>
       </div>
-      <div class="nav-item" data-view="settings" onclick="showView('settings')">
+      <div class="nav-item" data-view="settings" onclick="showView('settings')" id="navSettings">
         <span class="ic">⚙</span><span data-i18n="navSettings">Settings</span>
       </div>
       <div class="nav-item" data-view="users" onclick="showView('users')" id="navUsers" style="display:none">
@@ -516,6 +522,7 @@
             <h2 data-i18n="ticketsTitle">Work order log</h2>
             <div class="sub" data-i18n="ticketsSub">Search and filter all logged tickets</div>
           </div>
+          <button class="btn btn-danger" id="deleteAllBtn" onclick="deleteAllTickets()" style="display:none;" data-i18n="deleteAllBtn">Delete all tickets</button>
         </div>
         <div class="req-strip" id="reqStrip" style="display:none;">
           <h3 data-i18n="reqStripTitle">Pending public requests</h3>
@@ -617,6 +624,24 @@
             <h2 data-i18n="dataTitle">Files &amp; data</h2>
             <div class="sub" data-i18n="dataSub">Export or import the ticket log</div>
           </div>
+        </div>
+        <div class="form-card" style="margin-bottom:14px;">
+          <h3 class="chart-heading" data-i18n="exportFilterTitle">Export filters (optional)</h3>
+          <div class="form-grid">
+            <div class="field">
+              <label data-i18n="exportFilterBuilding">Building number</label>
+              <input type="text" id="exportFilterBuilding" placeholder="e.g. 326">
+            </div>
+            <div class="field">
+              <label data-i18n="exportFilterDateFrom">Entry date from</label>
+              <input type="date" id="exportFilterDateFrom">
+            </div>
+            <div class="field">
+              <label data-i18n="exportFilterDateTo">Entry date to</label>
+              <input type="date" id="exportFilterDateTo">
+            </div>
+          </div>
+          <div class="hint-box" style="margin-top:8px;" data-i18n="exportFilterHint">Leave blank to export everything. Filters apply to Excel, CSV, and JSON export.</div>
         </div>
         <div class="data-toolbar">
           <button class="btn btn-secondary" onclick="exportData('xlsx')" data-i18n="exportXlsxBtn">Export Excel (.xlsx)</button>
@@ -1107,8 +1132,8 @@ const RAW = [
 ].map(r => ({no:r[0], trade:r[1], loc:r[2], complaint:r[3], status:r[4], note:r[5], complaintAr:null, complaintEn:null, building:"326", engineer:"Eng. Ghaida Algadi"}));
 
 /* ---------- translation dictionaries ---------- */
-const TRADE_AR = {PLUMB:"سباكة", ELECT:"كهرباء", CIVIL:"مدني", LIFT:"مصعد", FIRE:"حريق", HVAC:"تكييف", BMS:"نظام إدارة المبنى"};
-const TRADE_EN = {PLUMB:"Plumbing", ELECT:"Electrical", CIVIL:"Civil", LIFT:"Lift", FIRE:"Fire", HVAC:"HVAC", BMS:"BMS"};
+const TRADE_AR = {PLUMB:"سباكة", ELECT:"كهرباء", CIVIL:"مدني", LIFT:"مصعد", FIRE:"حريق", HVAC:"تكييف", BMS:"نظام إدارة المبنى", OTHER:"أعطال أخرى"};
+const TRADE_EN = {PLUMB:"Plumbing", ELECT:"Electrical", CIVIL:"Civil", LIFT:"Lift", FIRE:"Fire", HVAC:"HVAC", BMS:"BMS", OTHER:"Other"};
 
 const COMPLAINT_AR = {
 "BASIN BLOCKED":"انسداد الحوض",
@@ -1185,6 +1210,7 @@ en:{
   sortNone:"Sort by…", sortBuilding:"Building No.", sortEngineer:"Engineer name",
   thNo:"No.", thDateTime:"Date/Time", thBuilding:"Bldg", thTrade:"Trade", thLoc:"Location", thComplaint:"Complaint", thStatus:"Status", thNote:"Note", thEngineer:"Engineer", thActions:"Actions",
   editBtn:"Edit", deleteBtn:"Delete", deleteConfirm:"Delete this ticket? This cannot be undone.", confirmYes:"Yes, continue",
+  deleteAllBtn:"Delete all tickets", deleteAllConfirm:"Delete all {n} tickets from the log? This cannot be undone.",
   editModalTitle:"Edit fault", saveBtn:"Save changes", cancelBtn:"Cancel", editSuccess:"Ticket updated.",
   total:"Total tickets", resolved:"Resolved (OK)", pending:"In progress", spr:"Needs spare parts",
   allStatus:"All", statusOk:"OK", statusStill:"In progress",
@@ -1200,6 +1226,9 @@ en:{
   dataTitle:"Files & data", dataSub:"Export or import the ticket log",
   exportJsonBtn:"Export JSON", exportCsvBtn:"Export CSV", exportXlsxBtn:"Export Excel (.xlsx)", importBtn:"Import data file",
   dataHint:"Files use the same columns as the AMOS Excel report (NO J.O / part. / Complaints location / Notice. / Order status / NOTE). Export saves the current log; import accepts .xlsx, .csv, or .json in this format and replaces the current log.",
+  exportFilterTitle:"Export filters (optional)", exportFilterBuilding:"Building number",
+  exportFilterDateFrom:"Entry date from", exportFilterDateTo:"Entry date to",
+  exportFilterHint:"Leave blank to export everything. Filters apply to Excel, CSV, and JSON export.",
   importConfirm:"This will replace the current log with the file you selected. Continue?",
   importSuccess:"Data imported successfully.", importError:"Could not read that file. Please check the format and try again.",
   settingsTitle:"Settings", settingsLang:"Language", settingsLangDesc:"Switch the interface language",
@@ -1280,6 +1309,7 @@ ar:{
   sortNone:"فرز حسب…", sortBuilding:"رقم المبنى", sortEngineer:"اسم المهندس/ة",
   thNo:"م", thDateTime:"التاريخ والوقت", thBuilding:"المبنى", thTrade:"التخصص", thLoc:"الموقع", thComplaint:"البلاغ", thStatus:"الحالة", thNote:"ملاحظة", thEngineer:"المهندس/ة", thActions:"إجراءات",
   editBtn:"تعديل", deleteBtn:"حذف", deleteConfirm:"هل تريد حذف هذا البلاغ؟ لا يمكن التراجع عن هذا الإجراء.", confirmYes:"نعم، متابعة",
+  deleteAllBtn:"حذف جميع الأعطال", deleteAllConfirm:"هل تريد حذف جميع البلاغات ({n})؟ لا يمكن التراجع عن هذا الإجراء.",
   editModalTitle:"تعديل العطل", saveBtn:"حفظ التعديلات", cancelBtn:"إلغاء", editSuccess:"تم تحديث البلاغ.",
   total:"إجمالي البلاغات", resolved:"تم الإنجاز", pending:"قيد التنفيذ", spr:"يتطلب قطع غيار",
   allStatus:"الكل", statusOk:"تم", statusStill:"قيد التنفيذ",
@@ -1295,6 +1325,9 @@ ar:{
   dataTitle:"الملفات والبيانات", dataSub:"تصدير أو استيراد سجل البلاغات",
   exportJsonBtn:"تصدير JSON", exportCsvBtn:"تصدير CSV", exportXlsxBtn:"تصدير Excel (.xlsx)", importBtn:"استيراد ملف بيانات",
   dataHint:"تستخدم الملفات نفس أعمدة تقرير AMOS بصيغة الإكسل (NO J.O / part. / Complaints location / Notice. / Order status / NOTE). التصدير يحفظ السجل الحالي، والاستيراد يقبل ملفات ‎.xlsx أو ‎.csv أو ‎.json بهذا التنسيق ويستبدل بها السجل الحالي.",
+  exportFilterTitle:"فلاتر التصدير (اختياري)", exportFilterBuilding:"رقم المبنى",
+  exportFilterDateFrom:"تاريخ الإدخال من", exportFilterDateTo:"تاريخ الإدخال إلى",
+  exportFilterHint:"اتركها فارغة لتصدير كل البيانات. الفلاتر تُطبَّق على تصدير Excel وCSV وJSON.",
   importConfirm:"سيؤدي هذا إلى استبدال السجل الحالي بالملف الذي اخترته. هل تريد المتابعة؟",
   importSuccess:"تم استيراد البيانات بنجاح.", importError:"تعذّرت قراءة هذا الملف. يرجى التحقق من الصيغة والمحاولة مرة أخرى.",
   settingsTitle:"الإعدادات", settingsLang:"اللغة", settingsLangDesc:"تبديل لغة الواجهة",
@@ -1358,7 +1391,7 @@ let lang = "en";
 let statusFilter = "ALL";
 let tradeFilter = "ALL";
 let currentUser = "";
-const TRADES = ["PLUMB","ELECT","CIVIL","LIFT","FIRE","HVAC","BMS"];
+const TRADES = ["PLUMB","ELECT","CIVIL","LIFT","FIRE","HVAC","BMS","OTHER"];
 const ACCOUNTS = [ { username: "ghithara", password: "326", question: "What is the building number?", answer: "326", role: "admin" } ];
 const PROTECTED_ACCOUNT = "ghithara";
 function isProtectedAccount(username){
@@ -1760,13 +1793,25 @@ function isAdmin(){
 function updateAdminUI(){
   const navUsers = document.getElementById("navUsers");
   if(!navUsers) return;
-  if(isAdmin()){
+  const admin = isAdmin();
+  const restrictedNavIds = ["navAssets","navPM","navInventory","navVendors","navReports","navSettings"];
+  restrictedNavIds.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = admin ? "flex" : "none";
+  });
+  if(admin){
     navUsers.style.display = "flex";
     buildUsersTable();
   } else {
     navUsers.style.display = "none";
     if(document.getElementById("view-users").classList.contains("active")) showView("dashboard");
   }
+  const restrictedViews = ["assets","pm","inventory","vendors","reports","settings"];
+  if(!admin && restrictedViews.some(v => document.getElementById("view-"+v).classList.contains("active"))){
+    showView("dashboard");
+  }
+  const deleteAllBtn = document.getElementById("deleteAllBtn");
+  if(deleteAllBtn) deleteAllBtn.style.display = isProtectedAccount(currentUser) ? "" : "none";
 }
 function buildUsersTable(){
   const tbody = document.getElementById("usersTbody");
@@ -1948,6 +1993,10 @@ function doRecoverReset(){
 
 /* ---------- sidebar navigation ---------- */
 function showView(name){
+  const restrictedViews = ["assets","pm","inventory","vendors","reports","settings","users"];
+  if(restrictedViews.includes(name) && !isAdmin()){
+    name = "dashboard";
+  }
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
   document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.getAttribute("data-view")===name));
@@ -2685,6 +2734,15 @@ function deleteTicket(no){
     pushState();
   });
 }
+function deleteAllTickets(){
+  if(!isProtectedAccount(currentUser)) return;
+  if(!RAW.length) return;
+  showConfirmModal(t("deleteAllConfirm").replace("{n}", RAW.length), () => {
+    RAW.length = 0;
+    render();
+    pushState();
+  });
+}
 
 /* ---------- export / import ---------- */
 function dateStamp(){ return new Date().toISOString().slice(0,10); }
@@ -2693,16 +2751,33 @@ function csvEscape(s){
   if(s.includes(",") || s.includes('"') || s.includes("\n")){ return '"' + s.replace(/"/g,'""') + '"'; }
   return s;
 }
+function getExportRows(){
+  const buildingFilter = (document.getElementById("exportFilterBuilding")?.value || "").trim().toLowerCase();
+  const dateFrom = document.getElementById("exportFilterDateFrom")?.value || "";
+  const dateTo = document.getElementById("exportFilterDateTo")?.value || "";
+  return RAW.filter(r => {
+    if(buildingFilter && String(r.building || "").trim().toLowerCase() !== buildingFilter) return false;
+    if((dateFrom || dateTo) && r.datetime){
+      const entryDate = String(r.datetime).slice(0,10);
+      if(dateFrom && entryDate < dateFrom) return false;
+      if(dateTo && entryDate > dateTo) return false;
+    } else if(dateFrom || dateTo){
+      return false;
+    }
+    return true;
+  });
+}
 function exportData(format){
   let content, mime, filename;
+  const rows = getExportRows();
   const XLSX_HEADER = ["NO J.O","part.","Complaints location","Notice.","Order status","NOTE","Building","Engineer","Date/Time"];
   if(format === "json"){
-    content = JSON.stringify(RAW, null, 2);
+    content = JSON.stringify(rows, null, 2);
     mime = "application/json"; filename = "amos-tickets-" + dateStamp() + ".json";
     downloadBlob(content, mime, filename);
     return;
   } else if(format === "xlsx"){
-    const aoa = [XLSX_HEADER, ...RAW.map(r => [r.no, r.trade, r.loc, r.complaint, r.status, r.note || "", r.building || "", r.engineer || "", formatDateTime(r.datetime)])];
+    const aoa = [XLSX_HEADER, ...rows.map(r => [r.no, r.trade, r.loc, r.complaint, r.status, r.note || "", r.building || "", r.engineer || "", formatDateTime(r.datetime)])];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!cols"] = [{wch:8},{wch:10},{wch:16},{wch:36},{wch:14},{wch:20},{wch:10},{wch:22},{wch:18}];
     const wb = XLSX.utils.book_new();
@@ -2710,8 +2785,8 @@ function exportData(format){
     XLSX.writeFile(wb, "amos-tickets-" + dateStamp() + ".xlsx");
     return;
   } else {
-    const rows = RAW.map(r => [r.no, r.trade, r.loc, csvEscape(r.complaint), r.status, r.note || "", r.building || "", csvEscape(r.engineer || ""), formatDateTime(r.datetime)].join(","));
-    content = "\uFEFF" + [XLSX_HEADER.join(","), ...rows].join("\n");
+    const csvRows = rows.map(r => [r.no, r.trade, r.loc, csvEscape(r.complaint), r.status, r.note || "", r.building || "", csvEscape(r.engineer || ""), formatDateTime(r.datetime)].join(","));
+    content = "\uFEFF" + [XLSX_HEADER.join(","), ...csvRows].join("\n");
     mime = "text/csv"; filename = "amos-tickets-" + dateStamp() + ".csv";
     downloadBlob(content, mime, filename);
   }
